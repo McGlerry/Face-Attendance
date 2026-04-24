@@ -134,5 +134,6 @@ data/logs/
 *.db
 *.db-journal
 static/uploads/
-models/*.caffemodel
-models/*.prototxt
+
+# OpenCV DNN face detection models (unused — project uses face_recognition/dlib instead)
+models/
