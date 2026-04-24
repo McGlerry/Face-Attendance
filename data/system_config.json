@@ -1,0 +1,75 @@
+{
+  "camera_settings": {
+    "camera_index": 0,
+    "backup_camera_indices": [
+      1,
+      2,
+      3
+    ],
+    "frame_width": 640,
+    "frame_height": 480,
+    "fps": 30,
+    "buffer_size": 1
+  },
+  "recognition_settings": {
+    "face_recognition_threshold": 0.4,
+    "confidence_threshold": 0.3,
+    "cooldown_seconds": 30,
+    "process_every_nth_frame": 2,
+    "require_minimum_detections": 5,
+    "detection_window_seconds": 15,
+    "capture_images_per_student": 10,
+    "detection_model": "hog",
+    "capture_detection_model": "hog",
+    "training_detection_model": "cnn",
+    "min_face_area": 8000,
+    "edge_buffer_pixels": 30,
+    "detection_window_frames": 5,
+    "max_recognition_distance": 0.55,
+    "suspicious_match_threshold": 0.4,
+    "max_students_per_frame": 3,
+    "num_jitters": 1,
+    "liveness_detection": true,
+    "liveness_blink_threshold": 0.2,
+    "liveness_min_blinks": 1,
+    "liveness_max_frames": 30,
+    "face_alignment": true,
+    "alignment_desired_width": 256
+  },
+  "system_settings": {
+    "dataset_dir": "C:\\dev\\gui flask - claude improvement - Final\\data\\dataset",
+    "auto_restart_camera": true,
+    "max_restart_attempts": 5,
+    "restart_delay_seconds": 10,
+    "health_check_interval": 300,
+    "cleanup_logs_days": 30,
+    "frame_timeout_seconds": 3,
+    "auto_export_enabled": true,
+    "export_interval_minutes": 30,
+    "enable_quality_validation": true,
+    "enable_multiple_confirmations": true,
+    "security_logging": true,
+    "classroom_mode": true
+  },
+  "classroom_settings": {
+    "max_capacity": 50,
+    "attendance_grace_period_minutes": 10,
+    "auto_mark_present_threshold": 0.25,
+    "lighting_validation": true
+  },
+  "display_settings": {
+    "show_live_feed": true,
+    "feed_width": 640,
+    "feed_height": 480,
+    "capture_feed_width": 480,
+    "capture_feed_height": 360,
+    "jpeg_quality": 85,
+    "show_confidence_scores": true
+  },
+  "performance_settings": {
+    "max_concurrent_processing": 2,
+    "frame_skip_on_high_load": true,
+    "adaptive_processing": true,
+    "memory_cleanup_interval": 300
+  }
+}

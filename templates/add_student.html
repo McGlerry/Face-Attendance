@@ -1,0 +1,126 @@
+{% extends "base.html" %}
+
+{% block title %}Add Student - Attendance System{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-8 mx-auto">
+        <h2><i class="fas fa-user-plus me-2"></i>Add New Student</h2>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-8 mx-auto">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-user-plus me-2"></i>Add New Student</h5>
+            </div>
+            <div class="card-body">
+                <form id="addStudentForm" method="POST" action="{{ url_for('student.add_student') }}">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="student_id" class="form-label">Student ID *</label>
+                            <input type="number" class="form-control" id="student_id" name="student_id" required onchange="previewStudent()">
+                            <div class="form-text">Must be a unique integer</div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="name" class="form-label">Full Name *</label>
+                            <input type="text" class="form-control" id="name" name="name" required onchange="previewStudent()">
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="email" class="form-label">Email</label>
+                            <input type="email" class="form-control" id="email" name="email" onchange="previewStudent()">
+                            <div class="form-text">Optional</div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="phone" class="form-label">Phone</label>
+                            <input type="text" class="form-control" id="phone" name="phone" onchange="previewStudent()">
+                            <div class="form-text">Optional</div>
+                        </div>
+                    </div>
+
+                    <div class="d-grid gap-2">
+                        <button type="button" class="btn btn-primary" onclick="confirmAddStudent()">
+                            <i class="fas fa-save me-2"></i>Add Student
+                        </button>
+                        <a href="{{ url_for('student.students') }}" class="btn btn-outline-secondary">
+                            <i class="fas fa-arrow-left me-2"></i>Back to Students
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add Student Confirmation Modal -->
+<div class="modal fade" id="addStudentModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title">Confirm Add Student</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="text-center">
+                    <i class="fas fa-user-plus fa-3x text-primary mb-3"></i>
+                    <h6>Are you sure you want to add this student?</h6>
+                    <div class="alert alert-light border mt-3 text-start">
+                        <p class="mb-2"><strong>Student ID:</strong> <span id="confirmStudentId"></span></p>
+                        <p class="mb-2"><strong>Name:</strong> <span id="confirmStudentName"></span></p>
+                        <p class="mb-2"><strong>Email:</strong> <span id="confirmStudentEmail"></span></p>
+                        <p class="mb-0"><strong>Phone:</strong> <span id="confirmStudentPhone"></span></p>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="submitAddStudent()">
+                    <i class="fas fa-check me-2"></i>Confirm Add
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function previewStudent() {
+    // Update preview elements in real-time as user types
+    const studentId = document.getElementById('student_id').value || '(not set)';
+    const studentName = document.getElementById('name').value || '(not set)';
+    const studentEmail = document.getElementById('email').value || '(not set)';
+    const studentPhone = document.getElementById('phone').value || '(not set)';
+    
+    document.getElementById('confirmStudentId').textContent = studentId;
+    document.getElementById('confirmStudentName').textContent = studentName;
+    document.getElementById('confirmStudentEmail').textContent = studentEmail;
+    document.getElementById('confirmStudentPhone').textContent = studentPhone;
+}
+
+function confirmAddStudent() {
+    const studentId = document.getElementById('student_id').value;
+    const studentName = document.getElementById('name').value;
+    
+    if (!studentId || !studentName) {
+        showNotification('Please fill in all required fields (Student ID and Name)', 'danger');
+        return;
+    }
+    
+    // Update preview before showing modal
+    previewStudent();
+    
+    const addModal = new bootstrap.Modal(document.getElementById('addStudentModal'));
+    addModal.show();
+}
+
+function submitAddStudent() {
+    document.getElementById('addStudentForm').submit();
+}
+
+// Initialize preview on page load
+document.addEventListener('DOMContentLoaded', previewStudent);
+</script>
+{% endblock %}

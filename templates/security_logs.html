@@ -1,0 +1,79 @@
+<!-- templates/security_logs.html -->
+{% extends "base.html" %}
+
+{% block title %}Security Logs - Attendance System{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <h2><i class="fas fa-shield-alt me-2"></i>Security Audit Logs</h2>
+        <p class="text-muted">Monitor system security events and attendance activities</p>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h5>Recent Security Events</h5>
+        <span class="badge bg-info">{{ logs|length }} Events</span>
+    </div>
+    <div class="card-body">
+        {% if logs %}
+        <div class="table-responsive">
+            <table class="table table-hover table-striped">
+                <thead class="table-dark">
+                    <tr>
+                        <th>Timestamp</th>
+                        <th>Event Type</th>
+                        <th>Student ID</th>
+                        <th>Class ID</th>
+                        <th>Confidence</th>
+                        <th>Severity</th>
+                        <th>Details</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for log in logs %}
+                    <tr>
+                        <td>{{ log.timestamp }}</td>
+                        <td>
+                            <span class="badge bg-{{ 'success' if log.event_type == 'ATTENDANCE_MARKED' else 'warning' if log.event_type == 'FACE_DETECTED' else 'info' }}">
+                                {{ log.event_type }}
+                            </span>
+                        </td>
+                        <td>{{ log.student_id or 'N/A' }}</td>
+                        <td>{{ log.class_id or 'N/A' }}</td>
+                        <td>
+                            {% if log.confidence_score %}
+                                {{ "%.2f"|format(log.confidence_score) }}
+                            {% else %}
+                                N/A
+                            {% endif %}
+                        </td>
+                        <td>
+                            <span class="badge bg-{{ 'danger' if log.severity == 'ERROR' else 'warning' if log.severity == 'WARNING' else 'secondary' }}">
+                                {{ log.severity }}
+                            </span>
+                        </td>
+                        <td>{{ log.details or 'N/A' }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="text-center py-5">
+            <i class="fas fa-shield-alt fa-3x text-muted mb-3"></i>
+            <h5 class="text-muted">No Security Events</h5>
+            <p class="text-muted">Security events will appear here as the system operates.</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<script>
+// Auto-refresh logs every 30 seconds
+setInterval(function() {
+    location.reload();
+}, 30000);
+</script>
+{% endblock %}

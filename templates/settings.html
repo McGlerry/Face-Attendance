@@ -1,0 +1,333 @@
+<!-- templates/settings.html -->
+{% extends "base.html" %}
+
+{% block title %}Settings - Attendance System{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <h2><i class="fas fa-cogs me-2"></i>System Settings</h2>
+        <p class="text-muted">Configure camera, recognition, and system parameters</p>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-8">
+        <form id="settingsForm" method="POST" action="{{ url_for('main.save_settings') }}">
+            <!-- Camera Settings -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5><i class="fas fa-camera me-2"></i>Camera Settings</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="camera_index" class="form-label">Primary Camera Index</label>
+                            <input type="number" class="form-control" id="camera_index" name="camera_index"
+                                   value="{{ config.camera_settings.camera_index }}" min="0" max="10">
+                            <div class="form-text">Usually 0 for built-in camera, 1+ for external cameras</div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="backup_camera_indices" class="form-label">Backup Camera Indices</label>
+                            <input type="text" class="form-control" id="backup_camera_indices" name="backup_camera_indices"
+                                   value="{{ config.camera_settings.backup_camera_indices|join(', ') }}">
+                            <div class="form-text">Comma-separated list (e.g., 1, 2, 3)</div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="frame_width" class="form-label">Frame Width</label>
+                            <input type="number" class="form-control" id="frame_width" name="frame_width"
+                                   value="{{ config.camera_settings.frame_width }}" min="320" max="1920">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="frame_height" class="form-label">Frame Height</label>
+                            <input type="number" class="form-control" id="frame_height" name="frame_height"
+                                   value="{{ config.camera_settings.frame_height }}" min="240" max="1080">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recognition Settings -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5><i class="fas fa-brain me-2"></i>Recognition Settings</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="face_threshold" class="form-label">Face Recognition Threshold</label>
+                            <input type="number" class="form-control" id="face_threshold" name="face_threshold"
+                                   value="{{ config.recognition_settings.face_recognition_threshold }}" min="0.1" max="1.0" step="0.01">
+                            <div class="form-text">Lower values = stricter matching (0.3-0.6 recommended)</div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="confidence_threshold" class="form-label">Confidence Threshold</label>
+                            <input type="number" class="form-control" id="confidence_threshold" name="confidence_threshold"
+                                   value="{{ config.recognition_settings.confidence_threshold }}" min="0.1" max="1.0" step="0.01">
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="cooldown_seconds" class="form-label">Recognition Cooldown (seconds)</label>
+                            <input type="number" class="form-control" id="cooldown_seconds" name="cooldown_seconds"
+                                   value="{{ config.recognition_settings.cooldown_seconds }}" min="5" max="300">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="process_nth_frame" class="form-label">Process Every Nth Frame</label>
+                            <input type="number" class="form-control" id="process_nth_frame" name="process_nth_frame"
+                                   value="{{ config.recognition_settings.process_every_nth_frame }}" min="1" max="10">
+                            <div class="form-text">Higher values = better performance but less responsive</div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="capture_per_student" class="form-label">Images to Capture per Student</label>
+                            <input type="number" class="form-control" id="capture_per_student" name="capture_per_student"
+                                   value="{{ config.recognition_settings.capture_images_per_student }}" min="10" max="100">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="min_detections" class="form-label">Minimum Detections Required</label>
+                            <input type="number" class="form-control" id="min_detections" name="min_detections"
+                                   value="{{ config.recognition_settings.require_minimum_detections }}" min="1" max="20">
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="detection_window_seconds" class="form-label">Detection Window (seconds)</label>
+                            <input type="number" class="form-control" id="detection_window_seconds" name="detection_window_seconds"
+                                   value="{{ config.recognition_settings.detection_window_seconds }}" min="5" max="60">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="min_face_area" class="form-label">Minimum Face Area</label>
+                            <input type="number" class="form-control" id="min_face_area" name="min_face_area"
+                                   value="{{ config.recognition_settings.min_face_area }}" min="1000" max="50000">
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="max_students_per_frame" class="form-label">Max Students per Frame</label>
+                            <input type="number" class="form-control" id="max_students_per_frame" name="max_students_per_frame"
+                                   value="{{ config.recognition_settings.max_students_per_frame }}" min="1" max="10">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- System Settings -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5><i class="fas fa-server me-2"></i>System Settings</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="auto_restart_camera" name="auto_restart_camera"
+                                       {% if config.system_settings.auto_restart_camera %}checked{% endif %}>
+                                <label class="form-check-label" for="auto_restart_camera">
+                                    Auto-restart Camera on Failure
+                                </label>
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="security_logging" name="security_logging"
+                                       {% if config.system_settings.security_logging %}checked{% endif %}>
+                                <label class="form-check-label" for="security_logging">
+                                    Enable Security Logging
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="max_restart_attempts" class="form-label">Max Restart Attempts</label>
+                            <input type="number" class="form-control" id="max_restart_attempts" name="max_restart_attempts"
+                                   value="{{ config.system_settings.max_restart_attempts }}" min="1" max="10">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="restart_delay_seconds" class="form-label">Restart Delay (seconds)</label>
+                            <input type="number" class="form-control" id="restart_delay_seconds" name="restart_delay_seconds"
+                                   value="{{ config.system_settings.restart_delay_seconds }}" min="1" max="60">
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="auto_export" name="auto_export"
+                                       {% if config.system_settings.auto_export_enabled %}checked{% endif %}>
+                                <label class="form-check-label" for="auto_export">
+                                    Auto Export Enabled
+                                </label>
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="export_interval" class="form-label">Export Interval (minutes)</label>
+                            <input type="number" class="form-control" id="export_interval" name="export_interval"
+                                   value="{{ config.system_settings.export_interval_minutes }}" min="15" max="1440">
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="quality_validation" name="quality_validation"
+                                       {% if config.system_settings.enable_quality_validation %}checked{% endif %}>
+                                <label class="form-check-label" for="quality_validation">
+                                    Enable Quality Validation
+                                </label>
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="multiple_confirmations" name="multiple_confirmations"
+                                       {% if config.system_settings.enable_multiple_confirmations %}checked{% endif %}>
+                                <label class="form-check-label" for="multiple_confirmations">
+                                    Enable Multiple Confirmations
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="classroom_mode" name="classroom_mode"
+                                       {% if config.system_settings.classroom_mode %}checked{% endif %}>
+                                <label class="form-check-label" for="classroom_mode">
+                                    Classroom Mode
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            <!-- Classroom Settings -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5><i class="fas fa-school me-2"></i>Classroom Settings</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="grace_period_minutes" class="form-label">Attendance Grace Period (minutes)</label>
+                            <input type="number" class="form-control" id="grace_period_minutes" name="grace_period_minutes"
+                                   value="{{ config.classroom_settings.attendance_grace_period_minutes }}" min="0" max="60">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="auto_mark_threshold" class="form-label">Auto Mark Present Threshold</label>
+                            <input type="number" class="form-control" id="auto_mark_threshold" name="auto_mark_threshold"
+                                   value="{{ config.classroom_settings.auto_mark_present_threshold }}" min="0.1" max="1.0" step="0.01">
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="lighting_validation" name="lighting_validation"
+                                       {% if config.classroom_settings.lighting_validation %}checked{% endif %}>
+                                <label class="form-check-label" for="lighting_validation">
+                                    Enable Lighting Validation
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Display Settings -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5><i class="fas fa-display me-2"></i>Display Settings</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="show_confidence" name="show_confidence"
+                                       {% if config.display_settings.show_confidence_scores %}checked{% endif %}>
+                                <label class="form-check-label" for="show_confidence">
+                                    Show Confidence Scores
+                                </label>
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="jpeg_quality" class="form-label">JPEG Quality</label>
+                            <input type="number" class="form-control" id="jpeg_quality" name="jpeg_quality"
+                                   value="{{ config.display_settings.jpeg_quality }}" min="50" max="100">
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="show_overlay" name="show_overlay"
+                                       {% if config.display_settings.show_recognition_overlay %}checked{% endif %}>
+                                <label class="form-check-label" for="show_overlay">
+                                    Show Recognition Overlay
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-save me-2"></i>Save Settings
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <div class="col-md-4">
+        <!-- Quick Actions -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5>Quick Actions</h5>
+            </div>
+            <div class="card-body">
+                <a href="{{ url_for('main.config_page') }}" class="btn btn-outline-primary w-100 mb-2">
+                    <i class="fas fa-file-code me-2"></i>View Full Config
+                </a>
+                <a href="{{ url_for('main.security_logs') }}" class="btn btn-outline-info w-100 mb-2">
+                    <i class="fas fa-shield-alt me-2"></i>Security Logs
+                </a>
+                <button class="btn btn-outline-warning w-100" onclick="resetToDefaults()">
+                    <i class="fas fa-undo me-2"></i>Reset to Defaults
+                </button>
+            </div>
+        </div>
+
+        <!-- System Status -->
+        <div class="card">
+            <div class="card-header">
+                <h5>System Status</h5>
+            </div>
+            <div class="card-body">
+                <div class="mb-2">
+                    <strong>Camera:</strong>
+                    <span class="badge bg-success">Active</span>
+                </div>
+                <div class="mb-2">
+                    <strong>Recognition Model:</strong>
+                    <span class="badge bg-success">Loaded</span>
+                </div>
+                <div class="mb-0">
+                    <strong>Database:</strong>
+                    <span class="badge bg-success">Connected</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function resetToDefaults() {
+    if (confirm('Are you sure you want to reset all settings to defaults?')) {
+        // Implement reset functionality
+        alert('Reset functionality not yet implemented');
+    }
+}
+
+// Form validation
+document.getElementById('settingsForm').addEventListener('submit', function(e) {
+    // Add client-side validation if needed
+});
+</script>
+{% endblock %}

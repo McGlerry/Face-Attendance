@@ -1,0 +1,135 @@
+<!-- MultipleFiles/add_class.html -->
+{% extends "base.html" %}
+
+{% block title %}Add Class - Attendance System{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-8 mx-auto">
+        <h2><i class="fas fa-plus me-2"></i>Add New Class</h2>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-8 mx-auto">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-plus me-2"></i>Add New Class</h5>
+            </div>
+            <div class="card-body">
+                <form id="addClassForm" method="POST" action="{{ url_for('class.add_class') }}">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="class_name" class="form-label">Class Name *</label>
+                            <input type="text" class="form-control" id="class_name" name="class_name" required onchange="previewClass()">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="class_code" class="form-label">Class Code *</label>
+                            <input type="text" class="form-control" id="class_code" name="class_code" required onchange="previewClass()">
+                            <div class="form-text">Must be unique</div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="start_time" class="form-label">Start Time</label>
+                            <input type="time" class="form-control" id="start_time" name="start_time" onchange="previewClass()">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="end_time" class="form-label">End Time</label>
+                            <input type="time" class="form-control" id="end_time" name="end_time" onchange="previewClass()">
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="days_of_week" class="form-label">Days of Week</label>
+                        <input type="text" class="form-control" id="days_of_week" name="days_of_week" 
+                               placeholder="e.g., monday,wednesday,friday" onchange="previewClass()">
+                        <div class="form-text">Leave empty for all days, or specify days separated by commas</div>
+                    </div>
+                    
+                    <div class="d-grid gap-2">
+                        <button type="button" class="btn btn-primary" onclick="confirmAddClass()">
+                            <i class="fas fa-save me-2"></i>Add Class
+                        </button>
+                        <a href="{{ url_for('class.classes') }}" class="btn btn-outline-secondary">
+                            <i class="fas fa-arrow-left me-2"></i>Back to Classes
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add Class Confirmation Modal -->
+<div class="modal fade" id="addClassModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title">Confirm Add Class</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="text-center">
+                    <i class="fas fa-book fa-3x text-success mb-3"></i>
+                    <h6>Are you sure you want to add this class?</h6>
+                    <div class="alert alert-light border mt-3 text-start">
+                        <p class="mb-2"><strong>Class Name:</strong> <span id="confirmClassName"></span></p>
+                        <p class="mb-2"><strong>Class Code:</strong> <span id="confirmClassCode"></span></p>
+                        <p class="mb-2"><strong>Start Time:</strong> <span id="confirmStartTime"></span></p>
+                        <p class="mb-2"><strong>End Time:</strong> <span id="confirmEndTime"></span></p>
+                        <p class="mb-0"><strong>Days:</strong> <span id="confirmDays"></span></p>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-success" onclick="submitAddClass()">
+                    <i class="fas fa-check me-2"></i>Confirm Add
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function previewClass() {
+    // Update preview elements in real-time as user types
+    const className = document.getElementById('class_name').value || '(not set)';
+    const classCode = document.getElementById('class_code').value || '(not set)';
+    const startTime = document.getElementById('start_time').value || '(not set)';
+    const endTime = document.getElementById('end_time').value || '(not set)';
+    const days = document.getElementById('days_of_week').value || 'All Days';
+    
+    document.getElementById('confirmClassName').textContent = className;
+    document.getElementById('confirmClassCode').textContent = classCode;
+    document.getElementById('confirmStartTime').textContent = startTime;
+    document.getElementById('confirmEndTime').textContent = endTime;
+    document.getElementById('confirmDays').textContent = days;
+}
+
+function confirmAddClass() {
+    const className = document.getElementById('class_name').value;
+    const classCode = document.getElementById('class_code').value;
+    
+    if (!className || !classCode) {
+        showNotification('Please fill in all required fields (Class Name and Code)', 'danger');
+        return;
+    }
+    
+    // Update preview before showing modal
+    previewClass();
+    
+    const addModal = new bootstrap.Modal(document.getElementById('addClassModal'));
+    addModal.show();
+}
+
+function submitAddClass() {
+    document.getElementById('addClassForm').submit();
+}
+
+// Initialize preview on page load
+document.addEventListener('DOMContentLoaded', previewClass);
+</script>
+{% endblock %}

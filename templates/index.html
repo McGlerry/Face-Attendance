@@ -1,0 +1,51 @@
+<!-- MultipleFiles/index.html -->
+{% extends "base.html" %}
+
+{% block title %}Welcome - Attendance System{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="jumbotron bg-primary text-white text-center p-5 rounded-3 mb-4">
+            <h1 class="display-4"><i class="fas fa-camera me-3"></i>Face Recognition Attendance System</h1>
+            <p class="lead">Advanced face recognition technology for automated attendance tracking</p>
+            <a class="btn btn-light btn-lg" href="{{ url_for('main.dashboard') }}">
+                <i class="fas fa-tachometer-alt me-2"></i>Get Started
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-4 mb-4">
+        <div class="card h-100">
+            <div class="card-body text-center">
+                <i class="fas fa-users fa-3x text-primary mb-3"></i>
+                <h5 class="card-title">Student Management</h5>
+                <p class="card-text">Register new students and capture their face data for recognition</p>
+                <a href="{{ url_for('student.students') }}" class="btn btn-primary">Manage Students</a>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4 mb-4">
+        <div class="card h-100">
+            <div class="card-body text-center">
+                <i class="fas fa-video fa-3x text-success mb-3"></i>
+                <h5 class="card-title">Live Monitoring</h5>
+                <p class="card-text">Real-time face recognition and automatic attendance marking</p>
+                <a href="{{ url_for('main.live_monitor') }}" class="btn btn-success">Start Monitoring</a>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4 mb-4">
+        <div class="card h-100">
+            <div class="card-body text-center">
+                <i class="fas fa-chart-bar fa-3x text-info mb-3"></i>
+                <h5 class="card-title">Reports & Analytics</h5>
+                <p class="card-text">Generate detailed attendance reports and export data</p>
+                <a href="{{ url_for('main.reports') }}" class="btn btn-info">View Reports</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

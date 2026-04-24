@@ -1,0 +1,403 @@
+<!-- MultipleFiles/dashboard.html -->
+{% extends "base.html" %}
+
+{% block title %}Dashboard - Attendance System{% endblock %}
+
+{% block head %}
+<style>
+    body.dashboard-bg {
+        background-image: url('{{ url_for("static", filename="background.jpg") }}');
+        background-size: cover;
+        background-position: center;
+        background-attachment: fixed;
+        background-repeat: no-repeat;
+    }
+    body.dashboard-bg .card {
+        background-color: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(5px);
+    }
+    body.dashboard-bg h2, 
+    body.dashboard-bg h4, 
+    body.dashboard-bg h5, 
+    body.dashboard-bg h6 {
+        color: #333;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <h2><i class="fas fa-tachometer-alt me-2"></i>System Dashboard</h2>
+    </div>
+</div>
+
+<!-- System Status Cards -->
+<div class="row mb-4">
+    <div class="col-md-3 mb-3">
+        <div class="card">
+            <div class="card-body text-center">
+                <div class="status-indicator {{ 'status-online' if status.running else 'status-offline' }}"></div>
+                <h6>System Status</h6>
+                <h4 class="text-{{ 'success' if status.running else 'danger' }}">
+                    {{ 'Online' if status.running else 'Offline' }}
+                </h4>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="card">
+            <div class="card-body text-center">
+                <div class="status-indicator {{ 'status-online' if status.camera_active else 'status-offline' }}"></div>
+                <h6>Camera</h6>
+                <h4 class="text-{{ 'success' if status.camera_active else 'danger' }}">
+                    {{ 'Connected' if status.camera_active else 'Disconnected' }}
+                </h4>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="card">
+            <div class="card-body text-center">
+                <div class="status-indicator {{ 'status-online' if status.model_loaded else 'status-warning' }}"></div>
+                <h6>Recognition Model</h6>
+                <h4 class="text-{{ 'success' if status.model_loaded else 'warning' }}">
+                    {{ 'Loaded' if status.model_loaded else 'Not Loaded' }}
+                </h4>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="card">
+            <div class="card-body text-center">
+                <i class="fas fa-users fa-2x text-primary mb-2"></i>
+                <h6>Total Students</h6>
+                <h4 class="text-primary">{{ students|length }}</h4>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Statistics -->
+<div class="row mb-4">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-chart-line me-2"></i>Today's Statistics</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-6 mb-3">
+                        <div class="text-center">
+                            <h4 class="text-info">{{ status.stats.faces_detected }}</h4>
+                            <small>Faces Detected</small>
+                        </div>
+                    </div>
+                    <div class="col-6 mb-3">
+                        <div class="text-center">
+                            <h4 class="text-success">{{ status.stats.recognitions }}</h4>
+                            <small>Recognitions</small>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="text-center">
+                            <h4 class="text-primary">{{ attendance_count }}</h4> {# This now uses the actual DB count #}
+                            <small>Attendance Marked</small>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="text-center">
+                            <h4 class="text-warning">{{ "%.1f"|format(status.stats.camera_fps) }}</h4>
+                            <small>Camera FPS</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-clock me-2"></i>Active Classes</h5>
+            </div>
+            <div class="card-body">
+                {% if status.active_classes %}
+                    <div class="list-group list-group-flush">
+                        {% for class in status.active_classes %}
+                        <div class="list-group-item d-flex justify-content-between align-items-center">
+                            <div>
+                                <strong>{{ class.name }}</strong>
+                                <br><small class="text-muted">{{ class.start_time }} - {{ class.end_time }}</small>
+                            </div>
+                            <span class="badge bg-primary rounded-pill">Active</span>
+                        </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <p class="text-muted text-center">No active classes at the moment</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Quick Actions -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-bolt me-2"></i>Quick Actions</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-3 mb-2">
+                        <a href="{{ url_for('student.add_student') }}" class="btn btn-outline-primary w-100">
+                            <i class="fas fa-user-plus me-2"></i>Add Student
+                        </a>
+                    </div>
+                    <div class="col-md-3 mb-2">
+                        <a href="{{ url_for('class.add_class') }}" class="btn btn-outline-success w-100">
+                            <i class="fas fa-plus me-2"></i>Add Class
+                        </a>
+                    </div>
+                    <div class="col-md-3 mb-2">
+                        <button id="trainModel" class="btn btn-outline-warning w-100">
+                            <i class="fas fa-brain me-2"></i>Train Model
+                        </button>
+                    </div>
+                    <div class="col-md-3 mb-2">
+                        <a href="{{ url_for('main.live_monitor') }}" class="btn btn-outline-info w-100">
+                            <i class="fas fa-video me-2"></i>Start Monitor
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Training Progress Bar Container (Moved from capture_faces.html) -->
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card" id="trainingProgressBarContainer" style="display: none;">
+            <div class="card-header">
+                <h5><i class="fas fa-spinner fa-spin me-2"></i>Model Training Progress</h5>
+            </div>
+            <div class="card-body">
+                <div class="progress mb-2">
+                    <div id="trainingProgressBar" class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 0%" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
+                </div>
+                <div id="trainingProgressText" class="text-center text-muted small">Initializing...</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+let trainingProgressInterval; // Declare the variable here
+
+document.addEventListener('DOMContentLoaded', function() {
+    document.getElementById('trainModel').addEventListener('click', function() {
+        const btn = this;
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Training...';
+        
+        showNotification('Model training started in the background. This may take a while.', 'info');
+
+        // Start polling for training progress immediately after initiating training
+        // Ensure any previous interval is cleared before starting a new one
+        if (trainingProgressInterval) {
+            clearInterval(trainingProgressInterval);
+        }
+        
+        // Reset progress bar to initial state before starting new training
+        const container = document.getElementById('trainingProgressBarContainer');
+        const progressBar = document.getElementById('trainingProgressBar');
+        const progressText = document.getElementById('trainingProgressText');
+        
+        container.style.display = 'block'; // Show container
+        progressBar.style.width = '0%';
+        progressBar.classList.remove('bg-success', 'bg-danger');
+        progressBar.classList.add('progress-bar-striped', 'progress-bar-animated');
+        progressText.textContent = 'Training initiated...';
+
+        trainingProgressInterval = setInterval(updateTrainingProgress, 1000); // Poll every 1 second
+
+        fetch('/api/train_model', { method: 'POST' })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // showNotification(data.message, 'success'); // Notification will be handled by updateTrainingProgress when status changes to completed
+                } else {
+                    showNotification('Training failed: ' + data.message, 'danger');
+                    // If training fails immediately, stop polling and update UI
+                    clearInterval(trainingProgressInterval);
+                    container.style.display = 'block'; // Ensure it's visible to show error
+                    progressBar.style.width = '100%';
+                    progressBar.classList.remove('progress-bar-striped', 'progress-bar-animated', 'bg-success');
+                    progressBar.classList.add('bg-danger');
+                    progressText.textContent = data.message;
+                    btn.disabled = false; // Re-enable button on immediate failure
+                    btn.innerHTML = '<i class="fas fa-brain me-2"></i>Train Model';
+                    
+                    // Hide after a delay
+                    setTimeout(() => {
+                        container.style.display = 'none';
+                        resetProgressBarState();
+                    }, 5000);
+                }
+            })
+            .catch(error => {
+                console.error('Error during training request:', error);
+                showNotification('An error occurred while initiating training.', 'danger');
+                clearInterval(trainingProgressInterval);
+                container.style.display = 'block'; // Ensure it's visible to show error
+                progressBar.style.width = '100%';
+                progressBar.classList.remove('progress-bar-striped', 'progress-bar-animated', 'bg-success');
+                progressBar.classList.add('bg-danger');
+                progressText.textContent = 'An error occurred during training initiation.';
+                btn.disabled = false; // Re-enable button on immediate failure
+                btn.innerHTML = '<i class="fas fa-brain me-2"></i>Train Model';
+
+                // Hide after a delay
+                setTimeout(() => {
+                    container.style.display = 'none';
+                    resetProgressBarState();
+                }, 5000);
+            })
+            .finally(() => {
+                // The button will be re-enabled and UI updated by updateTrainingProgress when training completes/fails
+                // No need to re-enable here immediately, as training is async
+            });
+    });
+
+    // Initial check for training progress in case a training was already running
+    // But don't show notifications on initial load to avoid duplicate alerts
+    fetch('/api/training_progress')
+        .then(response => response.json())
+        .then(data => {
+            const container = document.getElementById('trainingProgressBarContainer');
+            const progressBar = document.getElementById('trainingProgressBar');
+            const progressText = document.getElementById('trainingProgressText');
+            const trainButton = document.getElementById('trainModel');
+
+            if (data.status === 'in_progress') {
+                container.style.display = 'block';
+                progressBar.style.width = data.percentage + '%';
+                progressText.textContent = data.message;
+                progressBar.classList.add('progress-bar-striped', 'progress-bar-animated');
+                trainButton.disabled = true;
+                trainButton.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Training...';
+                // Start polling only if training is in progress
+                trainingProgressInterval = setInterval(updateTrainingProgress, 1000);
+            } else if (data.status === 'completed' || data.status === 'failed') {
+                // Just show the result without notification on initial load
+                container.style.display = 'block';
+                progressBar.style.width = '100%';
+                progressBar.classList.remove('progress-bar-striped', 'progress-bar-animated');
+                if (data.status === 'completed') {
+                    progressBar.classList.add('bg-success');
+                } else {
+                    progressBar.classList.add('bg-danger');
+                }
+                progressText.textContent = data.message;
+                trainButton.disabled = false;
+                trainButton.innerHTML = '<i class="fas fa-brain me-2"></i>Train Model';
+                // Hide after delay without notification
+                setTimeout(() => {
+                    resetProgressBarState();
+                }, 5000);
+            } else {
+                // Status is 'idle' - ensure hidden
+                resetProgressBarState();
+            }
+        })
+        .catch(() => {
+            // Silently ignore errors on initial load
+            resetProgressBarState();
+        });
+});
+
+// Function to reset the progress bar to its default hidden state
+function resetProgressBarState() {
+    const container = document.getElementById('trainingProgressBarContainer');
+    const progressBar = document.getElementById('trainingProgressBar');
+    const progressText = document.getElementById('trainingProgressText');
+
+    container.style.display = 'none'; // Hide the container
+    progressBar.style.width = '0%';
+    progressBar.classList.remove('bg-success', 'bg-danger');
+    progressBar.classList.add('progress-bar-striped', 'progress-bar-animated');
+    progressText.textContent = 'Waiting to start training...';
+}
+
+
+// Function to poll and update training progress
+function updateTrainingProgress() {
+    fetch('/api/training_progress')
+        .then(response => response.json())
+        .then(data => {
+            const container = document.getElementById('trainingProgressBarContainer');
+            const progressBar = document.getElementById('trainingProgressBar');
+            const progressText = document.getElementById('trainingProgressText');
+            const trainButton = document.getElementById('trainModel');
+
+            if (data.status === 'in_progress' || data.status === 'completed' || data.status === 'failed') {
+                container.style.display = 'block';
+                progressBar.style.width = data.percentage + '%';
+                progressBar.setAttribute('aria-valuenow', data.percentage);
+                progressText.textContent = data.message;
+
+                if (data.status === 'completed' || data.status === 'failed') {
+                    clearInterval(trainingProgressInterval); // Stop polling once done
+                    trainButton.disabled = false; // Re-enable the train button
+                    trainButton.innerHTML = '<i class="fas fa-brain me-2"></i>Train Model'; // Reset button text
+
+                    if (data.status === 'completed') {
+                        progressBar.classList.remove('progress-bar-striped', 'progress-bar-animated', 'bg-danger');
+                        progressBar.classList.add('bg-success');
+                        showNotification(data.message, 'success');
+                    } else {
+                        progressBar.classList.remove('progress-bar-striped', 'progress-bar-animated', 'bg-success');
+                        progressBar.classList.add('bg-danger');
+                        showNotification(data.message, 'danger');
+                    }
+                    // Hide after a short delay if completed/failed
+                    setTimeout(() => {
+                        resetProgressBarState(); // Call the new reset function
+                    }, 5000); // Hide after 5 seconds
+                } else if (data.status === 'in_progress') {
+                    progressBar.classList.remove('bg-success', 'bg-danger');
+                    progressBar.classList.add('progress-bar-striped', 'progress-bar-animated');
+                    trainButton.disabled = true; // Keep button disabled while training
+                    trainButton.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Training...';
+                }
+            } else { // Status is 'idle'
+                resetProgressBarState(); // Ensure it's hidden and reset
+                trainButton.disabled = false; // Ensure button is enabled if idle
+                trainButton.innerHTML = '<i class="fas fa-brain me-2"></i>Train Model';
+                clearInterval(trainingProgressInterval); // Ensure interval is cleared if status becomes idle
+            }
+        })
+        .catch(error => {
+            console.error('Error fetching training progress:', error);
+            clearInterval(trainingProgressInterval); // Stop polling on error
+            document.getElementById('trainingProgressBarContainer').style.display = 'none';
+            document.getElementById('trainModel').disabled = false; // Re-enable button on error
+            document.getElementById('trainModel').innerHTML = '<i class="fas fa-brain me-2"></i>Train Model';
+            showNotification('Error fetching training progress. Check console for details.', 'danger');
+            resetProgressBarState(); // Attempt to reset on error
+        });
+}
+
+// Clear interval on page unload
+window.addEventListener('beforeunload', function() {
+    if (trainingProgressInterval) {
+        clearInterval(trainingProgressInterval);
+    }
+});
+</script>
+{% endblock %}

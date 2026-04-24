@@ -1,0 +1,284 @@
+{% extends "base.html" %}
+
+{% block title %}Live Monitor - Face Recognition Attendance{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-8">
+        <h2><i class="fas fa-video me-2"></i>Live Monitor</h2>
+        <p class="text-muted">Real-time face recognition and attendance monitoring</p>
+    </div>
+    <div class="col-md-4 text-end">
+        <button id="startSystemBtn" class="btn btn-success me-2" onclick="startSystem()">
+            <i class="fas fa-play me-2"></i>Start System
+        </button>
+        <button id="stopSystemBtn" class="btn btn-danger" onclick="stopSystem()" disabled>
+            <i class="fas fa-stop me-2"></i>Stop System
+        </button>
+    </div>
+</div>
+
+<!-- Active Classes Banner -->
+{% if status.active_classes %}
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="alert alert-info d-flex align-items-center" role="alert">
+            <i class="fas fa-chalkboard-teacher me-2"></i>
+            <div>
+                <strong>Active Class{{ 'es' if status.active_classes|length > 1 else '' }}:</strong>
+                {% for class in status.active_classes %}
+                    <span class="badge bg-primary me-1">{{ class.name }} ({{ class.start_time }} - {{ class.end_time }})</span>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<div class="row">
+    <!-- Video Feed -->
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-camera me-2"></i>Live Video Feed</h5>
+            </div>
+            <div class="card-body p-0">
+                <img id="videoFeed" src="" class="img-fluid" alt="Live Video Feed" style="width: 100%; height: auto; display: block;">
+                <div id="videoPlaceholder" class="text-center p-4" style="display: none;">
+                    <i class="fas fa-camera fa-3x text-muted mb-3"></i>
+                    <h6>Camera Not Active</h6>
+                    <p class="text-muted">Start the system to begin live monitoring.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Attendance -->
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h6><i class="fas fa-clock me-2"></i>Recent Attendance</h6>
+            </div>
+            <div class="card-body" style="max-height: 600px; overflow-y: auto;">
+                <div id="recentAttendanceList">
+                    <p class="text-muted mb-0">No recent attendance events</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let statusUpdateInterval;
+
+// Check camera support on page load
+document.addEventListener('DOMContentLoaded', function() {
+    checkCameraSupport();
+});
+
+function checkCameraSupport() {
+    // Check if getUserMedia is supported
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        var videoFeed = document.getElementById('videoFeed');
+        var placeholder = document.getElementById('videoPlaceholder');
+        
+        videoFeed.style.display = 'none';
+        placeholder.style.display = 'flex';
+        
+        // Check if running on HTTPS or localhost
+        var isSecure = location.protocol === 'https:' || location.hostname === 'localhost' || location.hostname === '127.0.0.1';
+        
+        if (!isSecure) {
+            placeholder.innerHTML = '<i class="fas fa-lock fa-3x text-warning mb-3"></i>' +
+                '<h6>Camera Access Requires HTTPS</h6>' +
+                '<p class="text-muted">Please access this page via https:// or localhost</p>' +
+                '<small class="text-muted">Your current connection: ' + location.protocol + '//' + location.hostname + '</small>';
+        } else {
+            placeholder.innerHTML = '<i class="fas fa-camera fa-3x text-muted mb-3"></i>' +
+                '<h6>Camera Not Supported</h6>' +
+                '<p class="text-muted">Please use Chrome, Firefox, or Edge browser</p>';
+        }
+        
+        // Disable start button
+        document.getElementById('startSystemBtn').disabled = true;
+        return false;
+    }
+    
+    // Check secure context
+    var isSecure = location.protocol === 'https:' || location.hostname === 'localhost' || location.hostname === '127.0.0.1';
+    if (!isSecure) {
+        console.warn('Camera access requires secure context (HTTPS). Current protocol: ' + location.protocol);
+    }
+    
+    return true;
+}
+
+function startSystem() {
+    // Check camera support first
+    if (!checkCameraSupport()) {
+        showNotification('Camera access requires HTTPS. Please access via https:// or localhost.', 'warning');
+        return;
+    }
+
+    fetch('/api/start_system', {
+        method: 'POST'
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showNotification(data.message, 'success');
+            document.getElementById('startSystemBtn').disabled = true;
+            document.getElementById('stopSystemBtn').disabled = false;
+            startStatusUpdates();
+            // Force refresh video feed to start streaming
+            refreshVideoFeed();
+        } else {
+            showNotification('Error: ' + data.message, 'danger');
+        }
+    })
+    .catch(error => {
+        console.error('Error starting system:', error);
+        showNotification('Error starting system: ' + error.message, 'danger');
+    });
+}
+
+function stopSystem() {
+    fetch('/api/stop_system', {
+        method: 'POST'
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showNotification(data.message, 'success');
+            document.getElementById('startSystemBtn').disabled = false;
+            document.getElementById('stopSystemBtn').disabled = true;
+            stopStatusUpdates();
+            // Show placeholder when system is stopped
+            showVideoPlaceholder();
+        } else {
+            showNotification('Error: ' + data.message, 'danger');
+        }
+    })
+    .catch(error => {
+        console.error('Error stopping system:', error);
+        showNotification('Error stopping system: ' + error.message, 'danger');
+    });
+}
+
+function refreshVideoFeed() {
+    const videoFeed = document.getElementById('videoFeed');
+    const placeholder = document.getElementById('videoPlaceholder');
+
+    // Add timestamp to prevent caching
+    videoFeed.src = "{{ url_for('main.video_feed') }}?" + new Date().getTime();
+    videoFeed.style.display = 'block';
+    placeholder.style.display = 'none';
+
+    // Reload the image to start streaming
+    videoFeed.onload = function() {
+        // Video feed is now active
+    };
+}
+
+function showVideoPlaceholder() {
+    const videoFeed = document.getElementById('videoFeed');
+    const placeholder = document.getElementById('videoPlaceholder');
+
+    videoFeed.style.display = 'none';
+    placeholder.style.display = 'block';
+}
+
+function startStatusUpdates() {
+    updateStatus();
+    statusUpdateInterval = setInterval(updateStatus, 2000); // Update every 2 seconds
+}
+
+function stopStatusUpdates() {
+    if (statusUpdateInterval) {
+        clearInterval(statusUpdateInterval);
+        statusUpdateInterval = null;
+    }
+}
+
+// Always update recent attendance, even when system is not running
+function startAttendanceUpdates() {
+    updateRecentAttendanceOnly();
+    attendanceUpdateInterval = setInterval(updateRecentAttendanceOnly, 3000); // Update every 3 seconds
+}
+
+function stopAttendanceUpdates() {
+    if (attendanceUpdateInterval) {
+        clearInterval(attendanceUpdateInterval);
+        attendanceUpdateInterval = null;
+    }
+}
+
+function updateRecentAttendanceOnly() {
+    fetch('/api/system_status')
+    .then(response => response.json())
+    .then(data => {
+        // Update recent attendance list only
+        updateRecentAttendance(data.stats ? data.stats.recent_attendance_events : []);
+    })
+    .catch(error => {
+        console.error('Error updating recent attendance:', error);
+    });
+}
+
+function updateStatus() {
+    fetch('/api/system_status')
+    .then(response => response.json())
+    .then(data => {
+        // Update button states based on system status
+        document.getElementById('startSystemBtn').disabled = data.running;
+        document.getElementById('stopSystemBtn').disabled = !data.running;
+
+        // Show/hide video feed based on camera status
+        if (data.camera_active) {
+            refreshVideoFeed();
+        } else {
+            showVideoPlaceholder();
+        }
+
+        // Update recent attendance list
+        updateRecentAttendance(data.stats ? data.stats.recent_attendance_events : []);
+    })
+    .catch(error => {
+        console.error('Error updating status:', error);
+        // Don't show notification for status update errors to avoid spam
+    });
+}
+
+function updateRecentAttendance(attendanceEvents) {
+    const container = document.getElementById('recentAttendanceList');
+
+    if (!attendanceEvents || attendanceEvents.length === 0) {
+        container.innerHTML = '<p class="text-muted mb-0">No recent attendance events</p>';
+        return;
+    }
+
+    let html = '';
+    attendanceEvents.forEach(event => {
+        html += `
+            <div class="d-flex justify-content-between align-items-center mb-2 p-2 border rounded">
+                <div>
+                    <strong>${event.name}</strong><br>
+                    <small class="text-muted">${event.timestamp} - ${event.class_name}</small>
+                </div>
+                <span class="badge bg-success">Present</span>
+            </div>
+        `;
+    });
+
+    container.innerHTML = html;
+}
+
+// Initialize status updates on page load
+document.addEventListener('DOMContentLoaded', function() {
+    updateStatus(); // Initial update
+    showVideoPlaceholder(); // Start with placeholder
+});
+</script>
+{% endblock %}

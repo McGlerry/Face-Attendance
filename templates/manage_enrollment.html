@@ -1,0 +1,250 @@
+{% extends "base.html" %}
+
+{% block title %}Manage Enrollment - {{ selected_class.class_name }}{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <h2><i class="fas fa-user-plus me-2"></i>Manage Enrollment for {{ selected_class.class_name }} ({{ selected_class.class_code }})</h2>
+        <p class="text-muted">Add or remove students from this class.</p>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-6">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5><i class="fas fa-check-circle me-2"></i>Enrolled Students ({{ enrolled_students|length }})</h5>
+            </div>
+            <div class="card-body">
+                {% if enrolled_students %}
+                <ul class="list-group list-group-flush">
+                    {% for student in enrolled_students %}
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <div>
+                            <strong>{{ student.name }}</strong> (ID: {{ student.id }})
+                            <br><small class="text-muted">{{ student.email or 'No Email' }}</small>
+                        </div>
+                        <button class="btn btn-sm btn-outline-danger unenroll-btn"
+                                data-class-id="{{ selected_class.class_id }}"
+                                data-student-id="{{ student.id }}"
+                                data-student-name="{{ student.name }}"
+                                data-class-name="{{ selected_class.class_name }}">
+                            <i class="fas fa-minus-circle me-1"></i>Unenroll
+                        </button>
+                    </li>
+                    {% endfor %}
+                </ul>
+                {% else %}
+                <div class="text-center text-muted py-3">
+                    <i class="fas fa-users-slash fa-2x mb-2"></i>
+                    <p>No students currently enrolled in this class.</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5><i class="fas fa-user-plus me-2"></i>Available Students ({{ unenrolled_students|length }})</h5>
+            </div>
+            <div class="card-body">
+                {% if unenrolled_students %}
+                <ul class="list-group list-group-flush">
+                    {% for student in unenrolled_students %}
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <div>
+                            <strong>{{ student.name }}</strong> (ID: {{ student.id }})
+                            <br><small class="text-muted">{{ student.email or 'No Email' }}</small>
+                        </div>
+                        <button class="btn btn-sm btn-outline-success enroll-btn"
+                                data-class-id="{{ selected_class.class_id }}"
+                                data-student-id="{{ student.id }}"
+                                data-student-name="{{ student.name }}"
+                                data-class-name="{{ selected_class.class_name }}">
+                            <i class="fas fa-plus-circle me-1"></i>Enroll
+                        </button>
+                    </li>
+                    {% endfor %}
+                </ul>
+                {% else %}
+                <div class="text-center text-muted py-3">
+                    <i class="fas fa-user-slash fa-2x mb-2"></i>
+                    <p>All students are currently enrolled in this class, or no students are available.</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Enroll Confirmation Modal -->
+<div class="modal fade" id="enrollConfirmModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title">Confirm Enrollment</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="text-center">
+                    <i class="fas fa-user-plus fa-3x text-success mb-3"></i>
+                    <h6>Are you sure you want to enroll this student?</h6>
+                    <div class="alert alert-light border mt-3">
+                        <p class="mb-1"><strong>Student:</strong> <span id="enrollStudentName"></span></p>
+                        <p class="mb-0"><strong>Class:</strong> <span id="enrollClassName"></span></p>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-success" onclick="proceedEnrollment()">
+                    <i class="fas fa-check me-2"></i>Confirm Enrollment
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Unenroll Confirmation Modal -->
+<div class="modal fade" id="unenrollConfirmModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-warning text-dark">
+                <h5 class="modal-title">Confirm Unenrollment</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="text-center">
+                    <i class="fas fa-user-minus fa-3x text-warning mb-3"></i>
+                    <h6>Are you sure you want to unenroll this student?</h6>
+                    <div class="alert alert-light border mt-3">
+                        <p class="mb-1"><strong>Student:</strong> <span id="unenrollStudentName"></span></p>
+                        <p class="mb-0"><strong>Class:</strong> <span id="unenrollClassName"></span></p>
+                    </div>
+                    <p class="text-muted small mt-2">This action can be reversed by enrolling the student again.</p>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-warning" onclick="proceedUnenrollment()">
+                    <i class="fas fa-minus me-2"></i>Confirm Unenroll
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+    <script>
+        // Variables to store pending enrollment actions
+        let pendingEnrollment = {
+            classId: null,
+            studentId: null,
+            studentName: null,
+            className: null
+        };
+
+        // Event listeners for enrollment buttons
+        document.addEventListener('DOMContentLoaded', function() {
+            // Handle enroll button clicks
+            document.querySelectorAll('.enroll-btn').forEach(button => {
+                button.addEventListener('click', function() {
+                    const classId = this.getAttribute('data-class-id');
+                    const studentId = this.getAttribute('data-student-id');
+                    const studentName = this.getAttribute('data-student-name');
+                    const className = this.getAttribute('data-class-name');
+                    confirmEnroll(classId, studentId, studentName, className);
+                });
+            });
+
+            // Handle unenroll button clicks
+            document.querySelectorAll('.unenroll-btn').forEach(button => {
+                button.addEventListener('click', function() {
+                    const classId = this.getAttribute('data-class-id');
+                    const studentId = this.getAttribute('data-student-id');
+                    const studentName = this.getAttribute('data-student-name');
+                    const className = this.getAttribute('data-class-name');
+                    confirmUnenroll(classId, studentId, studentName, className);
+                });
+            });
+        });
+
+        function confirmEnroll(classId, studentId, studentName, className) {
+            pendingEnrollment = { classId, studentId, studentName, className };
+            document.getElementById('enrollStudentName').textContent = studentName;
+            document.getElementById('enrollClassName').textContent = className;
+            const enrollModal = new bootstrap.Modal(document.getElementById('enrollConfirmModal'));
+            enrollModal.show();
+        }
+
+        function confirmUnenroll(classId, studentId, studentName, className) {
+            pendingEnrollment = { classId, studentId, studentName, className };
+            document.getElementById('unenrollStudentName').textContent = studentName;
+            document.getElementById('unenrollClassName').textContent = className;
+            const unenrollModal = new bootstrap.Modal(document.getElementById('unenrollConfirmModal'));
+            unenrollModal.show();
+        }
+
+        function proceedEnrollment() {
+            if (!pendingEnrollment.classId || !pendingEnrollment.studentId) return;
+
+            fetch('/classes/update_enrollment', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: new URLSearchParams({
+                    class_id: pendingEnrollment.classId,
+                    student_id: pendingEnrollment.studentId,
+                    action: 'enroll'
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                const enrollModal = bootstrap.Modal.getInstance(document.getElementById('enrollConfirmModal'));
+                enrollModal.hide();
+                if (data.success) {
+                    showNotification(data.message, 'success');
+                    location.reload();
+                } else {
+                    showNotification('Error: ' + data.message, 'danger');
+                }
+            })
+            .catch(error => {
+                const enrollModal = bootstrap.Modal.getInstance(document.getElementById('enrollConfirmModal'));
+                enrollModal.hide();
+                showNotification('Request failed: ' + error, 'danger');
+            });
+        }
+
+        function proceedUnenrollment() {
+            if (!pendingEnrollment.classId || !pendingEnrollment.studentId) return;
+
+            fetch('/classes/update_enrollment', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: new URLSearchParams({
+                    class_id: pendingEnrollment.classId,
+                    student_id: pendingEnrollment.studentId,
+                    action: 'unenroll'
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                const unenrollModal = bootstrap.Modal.getInstance(document.getElementById('unenrollConfirmModal'));
+                unenrollModal.hide();
+                if (data.success) {
+                    showNotification(data.message, 'success');
+                    location.reload();
+                } else {
+                    showNotification('Error: ' + data.message, 'danger');
+                }
+            })
+            .catch(error => {
+                const unenrollModal = bootstrap.Modal.getInstance(document.getElementById('unenrollConfirmModal'));
+                unenrollModal.hide();
+                showNotification('Request failed: ' + error, 'danger');
+            });
+        }
+    </script>
+{% endblock %}

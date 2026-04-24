@@ -1,0 +1,59 @@
+<!-- templates/config.html -->
+{% extends "base.html" %}
+
+{% block title %}Configuration - Attendance System{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <h2><i class="fas fa-file-code me-2"></i>System Configuration</h2>
+        <p class="text-muted">View and edit the complete system configuration</p>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h5>Configuration File: system_config.json</h5>
+        <div>
+            <button class="btn btn-sm btn-outline-primary" onclick="downloadConfig()">
+                <i class="fas fa-download me-1"></i>Download
+            </button>
+            <button class="btn btn-sm btn-outline-danger" onclick="resetConfig()">
+                <i class="fas fa-undo me-1"></i>Reset
+            </button>
+        </div>
+    </div>
+    <div class="card-body">
+        <pre id="configDisplay" class="bg-light p-3 rounded" style="font-size: 0.9em; max-height: 600px; overflow-y: auto;">{{ config | tojson(indent=2) }}</pre>
+    </div>
+    <div class="card-footer">
+        <div class="alert alert-info">
+            <i class="fas fa-info-circle me-2"></i>
+            <strong>Note:</strong> Changes to the configuration file require a system restart to take effect.
+            Use the Settings page for runtime configuration changes.
+        </div>
+    </div>
+</div>
+
+<script>
+function downloadConfig() {
+    const configText = document.getElementById('configDisplay').textContent;
+    const blob = new Blob([configText], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'system_config.json';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+}
+
+function resetConfig() {
+    if (confirm('Are you sure you want to reset the configuration to defaults? This will restart the system.')) {
+        // Implement reset functionality
+        alert('Reset functionality not yet implemented. Manually restore system_config.json from backup.');
+    }
+}
+</script>
+{% endblock %}
